@@ -1,4 +1,4 @@
-// Deskland · 桌面宿主（原型）
+﻿// Deskland · 桌面宿主（原型）
 //
 // 做四件事：
 //   1. 把一个无边框窗口挂到桌面图标下面（壁纸层），里面用 WebView2 显示当前主题的页面（如 prototype/flat.html?wallpaper=1）
@@ -96,19 +96,37 @@ static class WebView2Loader
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern IntPtr LoadLibraryW(string path);
 
-    public static readonly bool Arm64 =
+    [DllImport("kernel32.dll")]
+    static extern bool IsWow64Process2(IntPtr process, out ushort processMachine, out ushort nativeMachine);
+
+    // 进程架构决定用哪份加载器；nativeMachine 决定"这台机器是不是 ARM64"（x64 模拟运行时进程架构是 AMD64）
+    public static readonly bool ProcessArm64 =
         (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") ?? "").IndexOf("ARM64", StringComparison.OrdinalIgnoreCase) >= 0;
+
+    public static readonly bool NativeArm64 = DetectNativeArm64();
+
+    static bool DetectNativeArm64()
+    {
+        try
+        {
+            ushort proc, native;
+            if (IsWow64Process2(Process.GetCurrentProcess().Handle, out proc, out native))
+                return native == 0xAA64;   // IMAGE_FILE_MACHINE_ARM64
+        }
+        catch { }
+        return ProcessArm64;
+    }
 
     public static void Init()
     {
-        string rid = Arm64 ? "win-arm64" : "win-x64";
+        string rid = ProcessArm64 ? "win-arm64" : "win-x64";
         string dll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", rid, "native", "WebView2Loader.dll");
         try
         {
             if (!File.Exists(dll)) { Log.Write("缺少 WebView2 加载器：" + dll); return; }
             IntPtr h = LoadLibraryW(dll);
             if (h == IntPtr.Zero) Log.Write("WebView2 加载器加载失败（" + Marshal.GetLastWin32Error() + "）：" + dll);
-            else Log.Write("WebView2 加载器（" + rid + "）：" + dll);
+            else Log.Write("WebView2 加载器（" + rid + "）：" + dll + (NativeArm64 ? "（ARM64 设备）" : ""));
         }
         catch (Exception ex) { Log.Write("WebView2 加载器初始化失败：" + ex.Message); }
     }
@@ -505,7 +523,7 @@ class HostContext : ApplicationContext
                 settingsWin.Post(Json.Stringify(Json.Obj("t", "init", "theme", Settings.Theme, "params", Settings.Params,
                     "screen", Json.Obj("w", scr.Width, "h", scr.Height), "autostart", IsAutoStart(),
                     "autostartWarn", autoStartSw != null, "autostartSw", autoStartSw ?? "",
-                    "lang", Settings.Lang, "langEff", I18n.Code, "langSys", I18n.Sys, "low", WebView2Loader.Arm64)));
+                    "lang", Settings.Lang, "langEff", I18n.Code, "langSys", I18n.Sys, "low", WebView2Loader.NativeArm64)));
                 if (updateVersion != null) PostUpdateState();
                 if (form != null && form.LastIcons != "") settingsWin.Post(form.LastIcons);
                 break;
@@ -1147,7 +1165,7 @@ class WallpaperForm : Form
         Shutdown();
     }
     // ARM64 上用低开销档：主题页会降低渲染像素上限（核显 / 省电）
-    string PageUrl { get { return "https://app.local/" + page + "?wallpaper=1" + (WebView2Loader.Arm64 ? "&low=1" : ""); } }
+    string PageUrl { get { return "https://app.local/" + page + "?wallpaper=1" + (WebView2Loader.NativeArm64 ? "&low=1" : ""); } }
 
     // 切换主题：换页面；新页面就绪后会重新收到设置和图标
     public void LoadPage(string newPage)

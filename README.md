@@ -52,7 +52,7 @@ The theme browser also contains Maldives, Lake, Sky, Ocean, Forest, Pink Forest,
 - An internet connection for the first build, which downloads the WebView2 development library.
 - Node.js only if you want to run the browser preview.
 
-The host is built as **AnyCPU**: the same `Deskland.exe` runs natively on x64 and on ARM64 Windows. It ships both WebView2 native loaders (`runtimes\win-x64` and `runtimes\win-arm64`) and loads the matching one at startup. On ARM64 the wallpaper automatically switches to a lighter rendering budget (smaller internal canvas, capped device pixel ratio) so the scenes keep their 30 fps target on Snapdragon-class devices.
+The installer and host run on both x64 and ARM64 Windows (on ARM64 the x64 host runs through Windows' built-in emulation, which is fully supported). The host detects the **native** architecture with `IsWow64Process2`; on ARM64 hardware it switches the wallpaper to a lighter rendering budget (smaller internal canvas, capped device pixel ratio) so the scenes keep their 30 fps target on Snapdragon-class devices, and it ships both WebView2 native loaders (`runtimes\win-x64` and `runtimes\win-arm64`). When the .NET SDK is installed, `host\build.ps1` additionally compiles an experimental native `Deskland-arm64.exe` with Roslyn (`/platform:arm64`); the installer ships the validated x64 host.
 
 Currently, Deskland renders on the **primary monitor** and targets 30 fps.
 

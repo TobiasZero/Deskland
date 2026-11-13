@@ -57,13 +57,34 @@ using System.Reflection;
 [assembly: AssemblyCopyright("Copyright 2026 Deskland authors")]
 "@
 [IO.File]::WriteAllText($versionSource, $versionText, (New-Object Text.UTF8Encoding($false)))
-& $csc /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 /win32manifest:"$root\app.manifest" `
+& $csc /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /win32manifest:"$root\app.manifest" `
     /win32icon:"$root\DesklandPreview.ico" `
     /out:"$bin\Deskland.exe" `
     /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Web.Extensions.dll `
     /r:"$lib\Microsoft.Web.WebView2.Core.dll" /r:"$lib\Microsoft.Web.WebView2.WinForms.dll" `
     "$root\DesktopHost.cs" "$root\Themes.cs" "$versionSource"
-if ($LASTEXITCODE -ne 0) { throw '编译失败' }
+if ($LASTEXITCODE -ne 0) { throw '编译失败（x64）' }
+
+# 原生 ARM64：Windows 自带的 .NET Framework 编译器不支持 /platform:arm64，
+# 有 .NET SDK 时用它的 Roslyn 编译器再编一份（没装 SDK 就只产出 x64，ARM64 上退回 x64 模拟）。
+$arm64 = Join-Path $bin 'Deskland-arm64.exe'
+$roslyn = Get-ChildItem 'C:\Program Files\dotnet\sdk\*\Roslyn\bincore\csc.dll' -ErrorAction SilentlyContinue |
+    Sort-Object { [version]($_.Directory.Parent.Parent.Name) } -Descending | Select-Object -First 1
+if ($roslyn -and (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+    $fx = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
+    & dotnet $roslyn.FullName /nologo /target:winexe /platform:arm64 /optimize+ /codepage:65001 `
+        /win32manifest:"$root\app.manifest" /win32icon:"$root\DesklandPreview.ico" `
+        /out:"$arm64" `
+        "/r:$fx\mscorlib.dll" "/r:$fx\System.dll" "/r:$fx\System.Core.dll" "/r:$fx\System.Drawing.dll" `
+        "/r:$fx\System.Windows.Forms.dll" "/r:$fx\System.Web.Extensions.dll" `
+        "/r:$lib\Microsoft.Web.WebView2.Core.dll" "/r:$lib\Microsoft.Web.WebView2.WinForms.dll" `
+        "$root\DesktopHost.cs" "$root\Themes.cs" "$versionSource"
+    if ($LASTEXITCODE -ne 0) { throw '编译失败（ARM64）' }
+    Write-Host "ARM64：$arm64"
+} else {
+    if (Test-Path -LiteralPath $arm64) { Remove-Item -LiteralPath $arm64 -Force }
+    Write-Host '没有找到 .NET SDK / Roslyn，跳过原生 ARM64 构建（ARM64 上会用 x64 模拟）'
+}
 foreach ($f in $files) {
     $target = Join-Path $bin $f.Dest
     New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
@@ -73,4 +94,4 @@ foreach ($f in $files) {
 $stale = Join-Path $bin 'WebView2Loader.dll'
 if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Force }
 Copy-Item -LiteralPath (Join-Path $root 'DesklandPreview.ico') -Destination (Join-Path $bin 'DesklandPreview.ico') -Force
-Write-Host "编译完成（AnyCPU：x64 + ARM64）：$bin\Deskland.exe"
+Write-Host "编译完成：$bin\Deskland.exe（x64），另有 Deskland-arm64.exe（原生 ARM64）"
