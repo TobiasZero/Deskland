@@ -1,4 +1,4 @@
-﻿Unicode true
+Unicode true
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !include "x64.nsh"
@@ -11,7 +11,7 @@ OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\Programs\Deskland Preview"
 InstallDirRegKey HKCU "Software\DesklandPreview\Installer" "InstallDir"
 RequestExecutionLevel user
-SetCompressor /SOLID lzma
+SetCompressor zlib
 BrandingText "Deskland Preview"
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey /LANG=1033 "ProductName" "Deskland Preview"
@@ -36,12 +36,12 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 Deskland authors"
 !insertmacro MUI_LANGUAGE "English"
 LangString LaunchDeskland ${LANG_SIMPCHINESE} "启动 Deskland Preview"
 LangString LaunchDeskland ${LANG_ENGLISH} "Launch Deskland Preview"
-LangString AppFiles ${LANG_SIMPCHINESE} "Deskland Preview 体验版（沙滩和草地）"
-LangString AppFiles ${LANG_ENGLISH} "Deskland Preview (Beach and Meadow)"
+LangString AppFiles ${LANG_SIMPCHINESE} "Deskland Preview（全部 15 个主题）"
+LangString AppFiles ${LANG_ENGLISH} "Deskland Preview (all 15 themes)"
 LangString DesktopShortcut ${LANG_SIMPCHINESE} "桌面快捷方式"
 LangString DesktopShortcut ${LANG_ENGLISH} "Desktop shortcut"
-LangString NeedX64 ${LANG_SIMPCHINESE} "需要 64 位 Windows 10 或更高版本。"
-LangString NeedX64 ${LANG_ENGLISH} "64-bit Windows 10 or later is required."
+LangString NeedX64 ${LANG_SIMPCHINESE} "需要 Windows 10 或更高版本（x64 或 ARM64）。"
+LangString NeedX64 ${LANG_ENGLISH} "Windows 10 or later is required (x64 or ARM64)."
 LangString CloseFailed ${LANG_SIMPCHINESE} "请退出正在运行的 Deskland Preview 后重试。"
 LangString CloseFailed ${LANG_ENGLISH} "Please exit Deskland Preview and retry."
 LangString RuntimeFailed ${LANG_SIMPCHINESE} "WebView2 安装未完成。请连接网络，安装 Microsoft Edge WebView2 Runtime 后重试。"
@@ -50,11 +50,7 @@ LangString InstallingRuntime ${LANG_SIMPCHINESE} "正在安装 Microsoft Edge We
 LangString InstallingRuntime ${LANG_ENGLISH} "Installing Microsoft Edge WebView2 Runtime (internet required)..."
 
 Function .onInit
-  ${IfNot} ${RunningX64}
-    MessageBox MB_ICONSTOP "$(NeedX64)"
-    SetErrorLevel 1
-    Abort
-  ${EndIf}
+  ; 程序是 AnyCPU：x64 和 ARM64 的 Windows 10/11 都能装，不再要求 RunningX64
   ${IfNot} ${AtLeastWin10}
     MessageBox MB_ICONSTOP "$(NeedX64)"
     SetErrorLevel 1
@@ -97,12 +93,9 @@ Section "$(AppFiles)" SecApp
     ${EndIf}
   ${EndIf}
   IfFileExists "$INSTDIR\host\bin\Deskland.exe" 0 closed
-  ExecWait '"$INSTDIR\host\bin\Deskland.exe" --exit-installed' $0
-  ${If} $0 != 0
-    MessageBox MB_ICONSTOP "$(CloseFailed)"
-    SetErrorLevel 3
-    Abort
-  ${EndIf}
+  ; 不阻塞等待：旧版本（0.1.3 及更早）不认识这个参数，ExecWait 会一直等下去
+  Exec '"$INSTDIR\host\bin\Deskland.exe" --exit-installed'
+  Sleep 1500
   closed:
   !include "${FILE_LIST}"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -129,12 +122,8 @@ Function un.onInit
 FunctionEnd
 Section "Uninstall"
   IfFileExists "$INSTDIR\host\bin\Deskland.exe" 0 unclosed
-  ExecWait '"$INSTDIR\host\bin\Deskland.exe" --exit-installed' $0
-  ${If} $0 != 0
-    MessageBox MB_ICONSTOP "$(CloseFailed)"
-    SetErrorLevel 3
-    Abort
-  ${EndIf}
+  Exec '"$INSTDIR\host\bin\Deskland.exe" --exit-installed'
+  Sleep 1500
   unclosed:
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "DesklandPreview"
   ${UnStrStr} $1 $0 '$\"$INSTDIR\host\bin\Deskland.exe$\"'

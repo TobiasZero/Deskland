@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$NsisCompiler,
     [string]$WebView2Bootstrapper,
     [switch]$SkipBuild
@@ -17,8 +17,22 @@ if (-not $NsisCompiler) {
     $nsisArchive = Join-Path $cache 'nsis-3.13.zip'
     $NsisCompiler = Join-Path $cache 'nsis-3.13\makensis.exe'
     if (-not (Test-Path -LiteralPath $NsisCompiler)) {
-        Invoke-WebRequest 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip' -OutFile $nsisArchive -UseBasicParsing
-        if ((Get-FileHash -LiteralPath $nsisArchive -Algorithm SHA256).Hash -ne 'BA63DFFC4410EE89193E1CB5A41989991BD77C61068DA17E3156D136B7B0B3D8') { throw 'NSIS archive checksum mismatch' }
+        # SourceForge liefert hinter der Weiche manchmal eine HTML-Seite；GitHub 镜像上是同一个官方压缩包。
+        $nsisUrls = @(
+            'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip',
+            'https://github.com/tauri-apps/binary-releases/releases/download/nsis-3.13/nsis-3.13.zip'
+        )
+        $nsisHash = 'BA63DFFC4410EE89193E1CB5A41989991BD77C61068DA17E3156D136B7B0B3D8'
+        $got = $false
+        foreach ($url in $nsisUrls) {
+            try {
+                Invoke-WebRequest $url -OutFile $nsisArchive -UseBasicParsing
+                if ((Get-FileHash -LiteralPath $nsisArchive -Algorithm SHA256).Hash -ne $nsisHash) { continue }
+                $got = $true
+                break
+            } catch { }
+        }
+        if (-not $got) { throw 'NSIS 3.13 下载失败（SourceForge 和镜像都没有拿到正确文件）；可以用 -NsisCompiler 指定已有的 makensis.exe' }
         Expand-Archive -LiteralPath $nsisArchive -DestinationPath $cache -Force
     }
 }
@@ -76,16 +90,20 @@ foreach ($file in $sources) {
     Copy-Item -LiteralPath (Join-Path $root $file) -Destination $target
 }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::CreateFromDirectory($sourceStage, (Join-Path $payload 'Deskland-source.zip'))
-# Only program data is installed. The accompanying ZIP contains the exact corresponding source.
-$runtimeFiles = @('host\bin\Deskland.exe', 'host\bin\DesklandPreview.ico', 'host\bin\Microsoft.Web.WebView2.Core.dll', 'host\bin\Microsoft.Web.WebView2.WinForms.dll', 'host\bin\WebView2Loader.dll')
+# 对应源码 ZIP 和安装包并排放在 dist/ 里（不塞进安装包：NSIS 3.13 在约 40MB 以上的数据上会 mmap 失败）
+$sourceZip = Join-Path $dist ("Deskland-Preview-$version-source.zip")
+if (Test-Path -LiteralPath $sourceZip) { Remove-Item -LiteralPath $sourceZip -Force }
+[IO.Compression.ZipFile]::CreateFromDirectory($sourceStage, $sourceZip)
+Remove-Item -LiteralPath $sourceStage -Recurse -Force
+# Only program data is installed.
+$runtimeFiles = @('host\bin\Deskland.exe', 'host\bin\DesklandPreview.ico', 'host\bin\Microsoft.Web.WebView2.Core.dll', 'host\bin\Microsoft.Web.WebView2.WinForms.dll',
+    'host\bin\runtimes\win-x64\native\WebView2Loader.dll', 'host\bin\runtimes\win-arm64\native\WebView2Loader.dll')
 $installFiles = @('LICENSE', 'NOTICE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'TRADEMARKS.md') + @($themeFiles | Where-Object { $_ -ne 'serve.mjs' } | ForEach-Object { 'prototype\' + $_ }) + $runtimeFiles
 foreach ($file in $installFiles) {
     $target = Join-Path $payload $file
     New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
     Copy-Item -LiteralPath (Join-Path $root $file) -Destination $target
 }
-$installFiles += 'Deskland-source.zip'
 $utf8 = New-Object Text.UTF8Encoding($true)
 $fileLines = @()
 $deleteLines = @()
@@ -103,11 +121,13 @@ $fileList = Join-Path $payload 'files.nsh'
 $deleteList = Join-Path $payload 'delete.nsh'
 [IO.File]::WriteAllLines($fileList, [string[]]$fileLines, $utf8)
 [IO.File]::WriteAllLines($deleteList, [string[]]$deleteLines, $utf8)
-$output = Join-Path $dist "Deskland-Preview-$version-win-x64-Setup.exe"
+$output = Join-Path $dist "Deskland-Preview-$version-win-x64-arm64-Setup.exe"
 & $NsisCompiler /V2 "/DVERSION=$version" "/DPAYLOAD=$payload" "/DOUTPUT=$output" "/DBOOTSTRAPPER=$WebView2Bootstrapper" "/DFILE_LIST=$fileList" "/DDELETE_LIST=$deleteList" (Join-Path $PSScriptRoot 'installer.nsi')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
 $hash = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash
 [IO.File]::WriteAllText(($output + '.sha256'), "$hash  $([IO.Path]::GetFileName($output))`r`n", (New-Object Text.UTF8Encoding($false)))
+$srcHash = (Get-FileHash -LiteralPath $sourceZip -Algorithm SHA256).Hash
+[IO.File]::WriteAllText(($sourceZip + '.sha256'), "$srcHash  $([IO.Path]::GetFileName($sourceZip))`r`n", (New-Object Text.UTF8Encoding($false)))
 $manifest = @($installFiles | ForEach-Object { @{ path = $_.Replace('\', '/'); sha256 = (Get-FileHash -LiteralPath (Join-Path $payload $_) -Algorithm SHA256).Hash } })
 [IO.File]::WriteAllText(($output + '.manifest.json'), ($manifest | ConvertTo-Json -Depth 4), $utf8)
 Write-Host "Installer: $output"

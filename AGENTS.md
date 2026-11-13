@@ -16,4 +16,5 @@
 - 发布或修改商标相关内容前须获得项目负责人的明确指示。
 - 许可见 `LICENSE`，名称和图标的说明见 `TRADEMARKS.md`。
 - 2026-11-06：已发布 GitHub Release `v0.1.2`，包含 Windows x64 安装包、对应源码 ZIP、SHA256 和文件清单；README 提供最新 Release 下载入口。仓库已公开，安装包未签名。
+- 2026-11-13：安装包与 ARM64：宿主改为 `/platform:anycpu` 编译，程序目录带 `runtimes\win-x64` 和 `runtimes\win-arm64` 两份 WebView2Loader.dll，`WebView2Loader.Init()` 按 `PROCESSOR_ARCHITECTURE` 在启动时加载对应的一份（不要改回 x64 专用构建，也不要再把 loader 拷到 bin 根目录）。ARM64 上宿主给主题页加 `&low=1`，`scene.js` 会把画布像素上限降到 240 万、DPR 上限 1.25。安装包用 `tools\build-installer.ps1` 构建（NSIS 3.13，SourceForge 失败时会回退到 GitHub 镜像）；对应源码 ZIP 现在和安装包并排放在 `dist/`，不塞进安装包（NSIS 3.13 在约 40MB 以上的数据上会 `error creating mmap`）。升级安装时的 `--exit-installed` 改成非阻塞 `Exec`，旧版本不认识该参数时不会挂住安装程序。
 - 2026-11-13：本分支改为「全部解锁」：11 个原先只有锁定缩略图的主题已在 `prototype/scenes/` 里从零实现（共用 `prototype/scene.js` 场景引擎），并新增「火山」「火山之夜」两个主题；`themes.json` 全部 `status: ready` / `product: free`，`host/Themes.cs` 只要求主题有页面即可切换，设置页去掉了锁定遮罩与购买弹窗。新增主题时：在 `themes.json` 定义参数（默认值要与场景里的 `defaults` 一致）、加页面和缩略图（`thumbs/*.webp`，294×168），并同步 `i18n/en.json`；`tools/gen-themes.mjs` 与 `tools/gen-i18n-themes.mjs` 负责生成清单和英文文字。上面「锁定主题没有 page/groups」的旧规则不再适用。

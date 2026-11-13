@@ -15,6 +15,8 @@ const QS = new URLSearchParams(location.search);
 const WALL = QS.has('wallpaper');      // 壁纸模式：桌面宿主加载，消息来自 WebView2
 const PREVIEW = QS.has('preview');     // 预览模式：设置窗口里的 iframe，消息来自父页面
 const SHOT = QS.has('shot');           // 截图/缩略图：只画风景，不画图标方块
+// ARM64 / 低功耗档（宿主在 ARM64 上会带 &low=1）：限制像素上限和设备像素比，保住 30fps
+const LOW = QS.has('low');
 
 const TASKBAR = 48;                    // 分享脚本排版演示图标时要用
 const CELL_W = 76, CELL_H = 100, GRID_X0 = 4, GRID_Y0 = 6;
@@ -530,8 +532,9 @@ function resize() {
   const box = cv.getBoundingClientRect();
   const bw = box.width || W, bh = box.height || H;
   // 预览：页面按整块桌面的尺寸排版再整体缩小，画布只要很低的分辨率
-  let s = PREVIEW ? .42 : Math.min(window.devicePixelRatio || 1, 2);
-  s = Math.min(s, Math.sqrt(4.2e6 / Math.max(1, bw * bh)));   // 静态图层最多约 420 万像素
+  let s = PREVIEW ? .42 : Math.min(window.devicePixelRatio || 1, LOW ? 1.25 : 2);
+  const maxPx = LOW ? 2.4e6 : 4.2e6;                          // 静态图层最多多少像素
+  s = Math.min(s, Math.sqrt(maxPx / Math.max(1, bw * bh)));
   cv.width = Math.round(bw * s); cv.height = Math.round(bh * s); cv._scale = s;
   markStatic();
   if (SCENE && SCENE.onResize) { try { SCENE.onResize(); } catch (e) { console.error(e); } }

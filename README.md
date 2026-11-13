@@ -46,13 +46,15 @@ The theme browser also contains Maldives, Lake, Sky, Ocean, Forest, Pink Forest,
 
 ## Requirements
 
-- Windows 10 or Windows 11, 64-bit.
+- Windows 10 or Windows 11 (x64 or ARM64).
 - Microsoft Edge WebView2 Runtime.
 - PowerShell and the .NET Framework C# compiler included with Windows; no .NET SDK installation is required.
 - An internet connection for the first build, which downloads the WebView2 development library.
 - Node.js only if you want to run the browser preview.
 
-Currently, Deskland renders on the **primary monitor** and targets 30 fps on integrated graphics.
+The host is built as **AnyCPU**: the same `Deskland.exe` runs natively on x64 and on ARM64 Windows. It ships both WebView2 native loaders (`runtimes\win-x64` and `runtimes\win-arm64`) and loads the matching one at startup. On ARM64 the wallpaper automatically switches to a lighter rendering budget (smaller internal canvas, capped device pixel ratio) so the scenes keep their 30 fps target on Snapdragon-class devices.
+
+Currently, Deskland renders on the **primary monitor** and targets 30 fps.
 
 ## Build from source
 
@@ -89,7 +91,9 @@ Build the NSIS installer without installing global development tools:
 powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 ```
 
-The first build downloads portable NSIS and Microsoft's WebView2 bootstrapper. Artifacts are written to `dist/` with SHA256 checksums and a matching source ZIP.
+The first build downloads portable NSIS and Microsoft's WebView2 bootstrapper. Artifacts are written to `dist/`: the installer, a matching `Deskland-Preview-<version>-source.zip` with the exact corresponding source, SHA256 checksums and a file manifest. The resulting `Deskland-Preview-0.3.0-win-x64-arm64-Setup.exe` installs on both x64 and ARM64 Windows.
+
+The setup executable installs the application itself; the source ZIP is deliberately written next to it (not inside the installer, where NSIS 3.13 hits a memory-mapping limit with very large payloads).
 
 The installer targets the current user's `Programs\Deskland Preview` directory and does not require administrator rights. If WebView2 is missing, its bootstrapper requires an internet connection. Uninstalling preserves user settings.
 
