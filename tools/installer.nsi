@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !include "x64.nsh"
@@ -48,6 +48,8 @@ LangString RuntimeFailed ${LANG_SIMPCHINESE} "WebView2 安装未完成。请连�
 LangString RuntimeFailed ${LANG_ENGLISH} "WebView2 setup did not complete. Connect to the internet, install Microsoft Edge WebView2 Runtime, and retry."
 LangString InstallingRuntime ${LANG_SIMPCHINESE} "正在安装 Microsoft Edge WebView2 Runtime（需要联网）..."
 LangString InstallingRuntime ${LANG_ENGLISH} "Installing Microsoft Edge WebView2 Runtime (internet required)..."
+LangString NoWrite ${LANG_SIMPCHINESE} "无法写入安装目录。请直接在资源管理器里双击安装包（不要从聊天/沙箱预览里运行），然后重试。"
+LangString NoWrite ${LANG_ENGLISH} "Cannot write to the install folder. Please start this setup directly from Explorer (not from a chat or sandboxed preview) and try again."
 
 Function .onInit
   ; 程序是 AnyCPU：x64 和 ARM64 的 Windows 10/11 都能装，不再要求 RunningX64
@@ -97,6 +99,25 @@ Section "$(AppFiles)" SecApp
   Exec '"$INSTDIR\host\bin\Deskland.exe" --exit-installed'
   Sleep 1500
   closed:
+  ; 写权限自检：从聊天/沙箱预览里运行时，这里会写不进去，给一句明确的提示
+  CreateDirectory "$INSTDIR"
+  FileOpen $0 "$INSTDIR\.deskland-write-test" w
+  IfErrors 0 writable
+  MessageBox MB_ICONSTOP "$(NoWrite)"
+  SetErrorLevel 4
+  Abort
+  writable:
+  FileClose $0
+  Delete "$INSTDIR\.deskland-write-test"
+  ; 升级：先清掉旧的程序文件，避免旧文件只读/被占用导致覆盖失败（用户设置不在安装目录里）
+  ExecWait 'attrib -R "$INSTDIR\*.*" /S /D'
+  RMDir /r "$INSTDIR\host"
+  RMDir /r "$INSTDIR\prototype"
+  Delete "$INSTDIR\LICENSE"
+  Delete "$INSTDIR\NOTICE"
+  Delete "$INSTDIR\README.md"
+  Delete "$INSTDIR\THIRD_PARTY_NOTICES.md"
+  Delete "$INSTDIR\TRADEMARKS.md"
   !include "${FILE_LIST}"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\Deskland Preview"
