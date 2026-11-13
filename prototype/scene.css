@@ -1,0 +1,16 @@
+/* Deskland · 主题场景的公共样式（每个主题页面共用） */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a20; }
+body { font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif; }
+#art { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+/* 预览模式（?preview=1，设置窗口里的缩略预览）：用半透明的方块示意真实图标的位置 */
+#ghosts { position: fixed; inset: 0; pointer-events: none; display: none; }
+body.preview #ghosts { display: block; }
+.ghost { position: absolute; }
+.ghost i { position: absolute; left: 50%; top: 4px; width: 48px; height: 48px; margin-left: -24px; border-radius: 9px;
+  background: rgba(255,255,255,.86); box-shadow: 3px 6px 8px rgba(20,30,50,.26); }
+.ghost b { position: absolute; left: 14%; right: 14%; top: 60px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.72); }
+body.wall:not(.preview) #ghosts { display: none; }
+/* 制作缩略图/截图时（?shot=1）不显示图标方块 */
+body.shot #ghosts { display: none; }

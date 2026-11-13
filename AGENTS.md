@@ -16,4 +16,4 @@
 - 发布或修改商标相关内容前须获得项目负责人的明确指示。
 - 许可见 `LICENSE`，名称和图标的说明见 `TRADEMARKS.md`。
 - 2026-11-06：已发布 GitHub Release `v0.1.2`，包含 Windows x64 安装包、对应源码 ZIP、SHA256 和文件清单；README 提供最新 Release 下载入口。仓库已公开，安装包未签名。
-- 2026-11-07：本地0.1.3同步启动与缩略图修复：壁纸不抢占前台并排除自身、不可见及 cloaked 窗口，沙滩在暂停与首次图标消息相邻到达时仍完成地形；设置页按版本刷新缓存，13张缩略图以内嵌 data URI 和真实 `<img>` 显示，容器 `width:100%`。真实 Preview 宿主验证13图均解码且宽约211px、高112px，暂停注入后沙滩完成、恢复后帧数增长。安装包43个文件且不含马尔代夫源码，SHA256 `e253cad56f1ea0ee2fb9d13ebe8a44f7dbe7232a506ba752cbe54c939c17bf44`；GitHub Release `v0.1.3` 已发布安装包、对应源码ZIP、SHA256和43文件清单，远端资产哈希核对一致，`releases/latest` 已指向0.1.3。缓存 NSIS ZIP 校验失败，构建复用正式版仓库已验证的 NSIS 3.13 编译器。
+- 2026-11-13：本分支改为「全部解锁」：11 个原先只有锁定缩略图的主题已在 `prototype/scenes/` 里从零实现（共用 `prototype/scene.js` 场景引擎），并新增「火山」「火山之夜」两个主题；`themes.json` 全部 `status: ready` / `product: free`，`host/Themes.cs` 只要求主题有页面即可切换，设置页去掉了锁定遮罩与购买弹窗。新增主题时：在 `themes.json` 定义参数（默认值要与场景里的 `defaults` 一致）、加页面和缩略图（`thumbs/*.webp`，294×168），并同步 `i18n/en.json`；`tools/gen-themes.mjs` 与 `tools/gen-i18n-themes.mjs` 负责生成清单和英文文字。上面「锁定主题没有 page/groups」的旧规则不再适用。

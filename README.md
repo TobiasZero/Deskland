@@ -1,34 +1,44 @@
-# Deskland Preview
+# Deskland Preview · Unlocked Edition
 
 **Adaptive Windows wallpaper that makes your desktop icons part of the scenery.**
 
-Deskland turns the space around your icons into a living landscape. Move, add or remove an icon and the beach, meadow, clouds and shadows quietly reshape around it — in real time, without AI, an account or an API key.
+Deskland turns the space around your icons into a living landscape. Move, add or remove an icon and the beach, meadow, volcano, clouds and shadows quietly reshape around it — in real time, without AI, an account or an API key.
 
-This is the **free, open-source Preview**, not a time-limited trial. It includes the complete **Beach** and **Meadow** themes, the Windows host, settings and sharing tools.
+This is the **free, open-source Preview**, not a time-limited trial — and in this fork **every theme is unlocked and playable**. It includes complete implementations of all fifteen themes, the Windows host, settings and sharing tools.
 
 **English** · [简体中文](#中文说明) · [Official website](https://deskland.app) · [Features](#features) · [Build from source](#build-from-source)
 
-![Meadow — included in Deskland Preview](docs/images/meadow.webp)
+![Volcano — new in this fork](prototype/thumbs/volcano.webp)
 
-![Beach — included in Deskland Preview](docs/images/beach.webp)
+![Meadow — included](docs/images/meadow.webp)
 
-![Maldives — locked-theme preview](docs/images/maldives.webp)
+![Beach — included](docs/images/beach.webp)
 
-Meadow and Beach are included in Preview. Maldives is shown as a locked-theme preview.
+## This fork: everything unlocked
+
+- **15 playable themes**, up from 2: Volcano, Volcano at Night, Meadow, Beach, Maldives, Lake, Sky, Ocean, Forest, Pink Forest, Hand-drawn City, Colorful City, Old Map, Nautical Chart, Lotus Pond.
+- The eleven themes that were only locked preview cards in the upstream Preview are **implemented from scratch** here (procedural Canvas 2D scenes with their own settings).
+- The lock UI, the purchase dialog and the entitlement check are removed: every theme in `prototype/themes.json` is `status: ready` and `product: free`, and the host accepts any theme that has a page.
+- Two brand-new themes were added: **Volcano** and **Volcano at Night**, with lava rivers that flow around your icons.
 
 ## Included themes
+
+| Volcano | Volcano at Night |
+| --- | --- |
+| ![Volcano theme](prototype/thumbs/volcano.webp) | ![Volcano at night](prototype/thumbs/volcano-night.webp) |
+| A glowing crater above a plain of cooled lava; the lava river bends around your icons. | Lava glows in the dark, embers rise into the stars. |
 
 | Beach | Meadow |
 | --- | --- |
 | ![Beach theme](prototype/thumbs/beach.webp) | ![Meadow theme](prototype/thumbs/meadow.webp) |
 | Turquoise waves, kayaks, seabirds and coconut palms. | Drifting clouds and shadows, a boy flying a kite and a little black cat. |
 
-The theme browser also shows 11 locked themes as a preview of the full Wallpaper edition. **Only names, descriptions and thumbnails are included for those themes — not their page code, parameters or implementation.**
+The theme browser also contains Maldives, Lake, Sky, Ocean, Forest, Pink Forest, Hand-drawn City, Colorful City, Old Map, Nautical Chart and Lotus Pond — all fully playable.
 
 ## Features
 
 - **Adaptive scenery:** uses the real positions of desktop icons and transitions smoothly when they move.
-- **Two complete themes:** every setting for Beach and Meadow is included and saved between sessions.
+- **Fifteen complete themes:** every theme has its own page, parameters and saved settings.
 - **Made for the desktop:** tray controls, startup on sign-in and automatic pause when a window is maximized or full-screen.
 - **Private sharing:** image and animation exports use sample icons and color blocks, never a screenshot of your desktop or real file names.
 - **Independent installation:** Preview uses its own install directory, settings, startup entry and instance identity, so it can coexist with other Deskland builds.
@@ -90,19 +100,22 @@ The installer targets the current user's `Programs\Deskland Preview` directory a
 | Path | Contents |
 | --- | --- |
 | `host/` | Windows host, build scripts and application manifest |
+| `prototype/scene.js` | Shared Canvas 2D scene engine for the new themes (icon field, caching, pause, preview) |
+| `prototype/scenes/` | One scene module per new theme (volcano, water, clouds, forest, maps) |
 | `prototype/flat.html` | Beach theme |
 | `prototype/meadow.html` | Meadow theme |
 | `prototype/settings.html` | Settings interface |
-| `prototype/themes.json` | Full free-theme definitions and locked-theme display metadata |
+| `prototype/themes.json` | Theme catalogue (all themes unlocked) |
 | `prototype/share.js` | Privacy-preserving image and animation sharing |
 | `prototype/assets/` | Images used by the included themes |
-| `tools/` | Installer build tooling |
+| `tools/` | Installer build tooling, `gen-themes.mjs`, `gen-i18n-themes.mjs` |
 
 ## Known limitations
 
 - Only the primary monitor is supported.
 - Windows Spotlight or a wallpaper slideshow can briefly flash when Windows changes the background image.
-- Preview does not include account sign-in, entitlement restoration, automatic updates or the other themes' implementation.
+- The eleven previously locked themes are new, procedural implementations drawn with the shared Canvas 2D engine — they follow each theme's description and palette, not the original paid theme code (which is not part of this repository).
+- Preview does not include account sign-in, entitlement restoration or automatic updates.
 
 ## Credits and license
 
@@ -122,23 +135,35 @@ Issues and suggestions are welcome through GitHub Issues. This is an independent
 
 Deskland 是一款 Windows 自适应动态壁纸。移动、添加或删除桌面图标时，海岸线、草地、云朵和阴影会实时围绕图标调整。全部在本地实时演算，不使用 AI，无需账号或 API Key。
 
-本仓库是**免费的开源体验版，不是限时试用版**，包含完整的沙滩和草地主题、Windows 宿主、设置界面与分享工具。
+本仓库是**免费的开源体验版**；在这个分支里**全部主题都已解锁**，包含 15 个可玩主题的完整实现、Windows 宿主、设置界面与分享工具。
 
 [官方网站](https://deskland.app) · [从源码运行](#build-from-source) · [许可](#credits-and-license)
 
+### 本分支：全部解锁
+
+- **15 个可玩主题**（原版只有 2 个）：火山、火山之夜、草地、沙滩、马尔代夫、湖泊、天空、大海、森林、粉色森林、手绘城市、彩色城市、老地图、航海地图、荷塘。
+- 原版只有锁定缩略图的 11 个主题，在这里**从零实现**（程序化 Canvas 2D 场景，各有自己的参数）。
+- 去掉锁定遮罩、购买弹窗和授权检查：`prototype/themes.json` 里所有主题都是 `status: ready`、`product: free`，宿主接受任何有页面的主题。
+- 新增两个主题：**火山** 与 **火山之夜**，熔岩河会绕开你的图标。
+
 ### 包含的主题
+
+| 火山 | 火山之夜 |
+| --- | --- |
+| ![火山主题](prototype/thumbs/volcano.webp) | ![火山之夜](prototype/thumbs/volcano-night.webp) |
+| 赤红的火山口与冷却的黑色熔岩原，熔岩河绕着图标流下。 | 夜色里的火山：熔岩河发光，火星升上星空。 |
 
 | 沙滩 | 草地 |
 | --- | --- |
 | ![沙滩主题](prototype/thumbs/beach.webp) | ![草地主题](prototype/thumbs/meadow.webp) |
 | 海浪、皮划艇、海鸟和椰子树。 | 漂浮的云与云影、放风筝的男孩和小黑猫。 |
 
-主题列表还展示另外 11 个锁定主题，帮助了解壁纸版内容。**这些锁定主题只有名称、简介和缩略图，不包含页面源码、参数或其他实现。**
+主题列表里还有马尔代夫、湖泊、天空、大海、森林、粉色森林、手绘城市、彩色城市、老地图、航海地图和荷塘——全部可玩。
 
 ### 功能
 
 - **图标自适应：**读取真实桌面图标的位置，在移动、添加或删除时平滑调整场景。
-- **两个完整主题：**沙滩和草地的全部参数均可调整并自动保存。
+- **十五个完整主题：**每个主题都有自己的页面、参数，设置自动保存。
 - **适合常驻桌面：**托盘控制、开机自动启动，前台窗口最大化或全屏时自动暂停。
 - **隐私分享：**图片和动画使用示例图标与名字色块，不截取桌面窗口或真实文件名。
 - **独立安装：**安装目录、用户数据、启动项和运行实例标识均独立，可与其他 Deskland 版本共存。

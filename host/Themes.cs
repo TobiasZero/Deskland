@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 
 // 主题清单（prototype/themes.json）：页面映射与产品权限共用同一份清单。
-// 未标 product 的 ready 主题默认拒绝，避免新增付费主题被意外免费开放。
+// 本分支全部主题已解锁：只要主题是 ready 且有页面就允许切换（product 仅保留作说明）。
 static class Themes
 {
     static Dictionary<string, object> Find(string pageDir, string id)
@@ -39,11 +39,9 @@ static class Themes
         return theme != null && theme.TryGetValue("product", out product) ? product as string : null;
     }
 
+    // 本分支解锁全部主题：只要 themes.json 里有页面就允许切换，不再看 product/授权。
     public static bool Allowed(string pageDir, string id, Func<string, bool> owns)
     {
-        if (PageFor(pageDir, id) == null) return false;
-        string product = ProductFor(pageDir, id);
-        if (product == "free") return true;
-        return product != null && owns != null && owns(product);
+        return PageFor(pageDir, id) != null;
     }
 }
